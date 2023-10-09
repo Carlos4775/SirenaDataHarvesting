@@ -1,5 +1,8 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using SirenaDataHarvesting.Models;
+using SirenaDataHarvesting.Services.ProductService;
+using SirenaDataHarvesting.Utils;
 
 namespace SirenaDataHarvesting
 {
@@ -7,61 +10,69 @@ namespace SirenaDataHarvesting
     {
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IProductService _productService;
 
-        public Worker(ILogger<Worker> logger, IConfiguration configuration)
+        public Worker(ILogger<Worker> logger, IConfiguration configuration, IProductService productService)
         {
             _logger = logger;
             _configuration = configuration;
+            _productService = productService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            int workerDelayInMilliseconds = _configuration.GetValue<int>("DelaySettings:WorkerDelayInMilliseconds")!;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-                string targetUrl = _configuration["WebScrapingSettings:TargetUrl"]!;
-                string csvFilePath = _configuration["WebScrapingSettings:CsvFilePath"]!;
-
-                // Set up ChromeDriver
                 IWebDriver driver = new ChromeDriver();
 
-                // Navigate to the website
-                driver.Navigate().GoToUrl(targetUrl);
+                string targetUrl = _configuration["WebScrapingSettings:TargetUrl"]!;
 
-                // Create a list to store the item details
-                List<string[]> items = new();
+                // Navigate to the website
+                await Task.Run(() => driver.Navigate().GoToUrl(targetUrl), stoppingToken);
 
                 // Find elements that contain the product details
-                IReadOnlyCollection<IWebElement> productElements = driver.FindElements(By.CssSelector(".shelf-item"));
+                IReadOnlyCollection<IWebElement> productElements = await Task.Run(() => driver.FindElements(By.CssSelector(".item-product")));
 
-                // Loop through the product elements and extract the desired information
                 foreach (IWebElement productElement in productElements)
                 {
-                    // Extract the name and price of the product
-                    string name = productElement.FindElement(By.ClassName("shelf-item__title")).Text;
-                    string price = productElement.FindElement(By.ClassName("val")).Text;
+                    string? name = productElement.FindElement(By.ClassName("item-product-title")).FindElement(By.TagName("a")).Text;
+                    string? priceString = productElement.FindElement(By.ClassName("item-product-price")).FindElement(By.TagName("strong")).Text;
+                    string? imageUrl = ImageUrlUtility.ExtractImageUrlFromStyleAttribute(productElement.FindElement(By.ClassName("item-product-image")).GetAttribute("style"));
 
-                    // Add the item details to the list
-                    items.Add(new string[] { name, price });
-                }
+                    priceString = priceString.Replace("$", ""); // Eliminar el símbolo de dólar
 
-                // Saving extracted data in CSV file
-                using (StreamWriter writer = new(csvFilePath))
-                {
-                    // Write the CSV header
-                    writer.WriteLine("Name,Price");
-                    // Write the item details
-                    foreach (string[] item in items)
+                    decimal price = decimal.Parse(priceString);
+
+                    Product product = new()
                     {
-                        writer.WriteLine(string.Join(",", item));
+                        Name = name,
+                        Price = price,
+                        ImageUrl = imageUrl
+                    };
+
+                    Product? existingProduct = await _productService.GetAsync(product);
+
+                    if (existingProduct == null)
+                    {
+                        await _productService.CreateAsync(product);
+                    }
+                    else
+                    {
+                        if (_productService.AreProductsDifferent(existingProduct, product))
+                        {
+                            await _productService.UpdateAsync(product);
+                        }
                     }
                 }
 
                 // Close the browser
                 driver.Quit();
 
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(workerDelayInMilliseconds, stoppingToken);
             }
         }
     }
