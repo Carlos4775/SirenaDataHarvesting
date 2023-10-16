@@ -8,9 +8,9 @@ IHost host = Host.CreateDefaultBuilder(args)
     {
         services.AddHostedService<Worker>();
 
-        services.AddSingleton(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-        services.AddSingleton<IProductService, ProductService>();
-        services.AddSingleton<IScraperService, ScraperService>();
+        services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddTransient<IProductService, ProductService>();
+        services.AddTransient<IScraperService, ScraperService>();
     })
     .Build();
 

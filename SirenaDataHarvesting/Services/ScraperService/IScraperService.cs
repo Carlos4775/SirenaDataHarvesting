@@ -4,6 +4,6 @@ namespace SirenaDataHarvesting.Services.ScraperService
 {
     public interface IScraperService
     {
-        Task<IReadOnlyCollection<IWebElement>> ScrapeProductsAsync();
+        Task<IReadOnlyCollection<IWebElement>> ScrapeProductsAsync(IWebDriver driver);
     }
 }
