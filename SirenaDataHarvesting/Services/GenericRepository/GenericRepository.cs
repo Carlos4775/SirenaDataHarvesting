@@ -17,7 +17,7 @@ namespace SirenaDataHarvesting.Services.GenericRepository
 
             string connectionString = _configuration["WebScrapingDatabase:ConnectionString"]!;
             string databaseName = _configuration["WebScrapingDatabase:DatabaseName"]!;
-            var database = new MongoClient(connectionString).GetDatabase(databaseName);
+            IMongoDatabase database = new MongoClient(connectionString).GetDatabase(databaseName);
 
             _collection = database.GetCollection<TDocument>(GenericRepository<TDocument>.GetCollectionName(typeof(TDocument)));
         }
@@ -32,15 +32,12 @@ namespace SirenaDataHarvesting.Services.GenericRepository
             return _collection.AsQueryable();
         }
 
-        public virtual IEnumerable<TDocument> FilterBy(
-            Expression<Func<TDocument, bool>> filterExpression)
+        public virtual IEnumerable<TDocument> FilterBy(Expression<Func<TDocument, bool>> filterExpression)
         {
             return _collection.Find(filterExpression).ToEnumerable();
         }
 
-        public virtual IEnumerable<TProjected> FilterBy<TProjected>(
-            Expression<Func<TDocument, bool>> filterExpression,
-            Expression<Func<TDocument, TProjected>> projectionExpression)
+        public virtual IEnumerable<TProjected> FilterBy<TProjected>(Expression<Func<TDocument, bool>> filterExpression, Expression<Func<TDocument, TProjected>> projectionExpression)
         {
             return _collection.Find(filterExpression).Project(projectionExpression).ToEnumerable();
         }
@@ -57,8 +54,9 @@ namespace SirenaDataHarvesting.Services.GenericRepository
 
         public virtual TDocument FindById(string id)
         {
-            var objectId = new ObjectId(id);
-            var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+            ObjectId objectId = new(id);
+            FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+
             return _collection.Find(filter).SingleOrDefault();
         }
 
@@ -66,12 +64,12 @@ namespace SirenaDataHarvesting.Services.GenericRepository
         {
             return Task.Run(() =>
             {
-                var objectId = new ObjectId(id);
-                var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+                ObjectId objectId = new(id);
+                FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+
                 return _collection.Find(filter).SingleOrDefaultAsync();
             });
         }
-
 
         public virtual void InsertOne(TDocument document)
         {
@@ -88,7 +86,6 @@ namespace SirenaDataHarvesting.Services.GenericRepository
             _collection.InsertMany(documents);
         }
 
-
         public virtual async Task InsertManyAsync(ICollection<TDocument> documents)
         {
             await _collection.InsertManyAsync(documents);
@@ -96,13 +93,13 @@ namespace SirenaDataHarvesting.Services.GenericRepository
 
         public void ReplaceOne(TDocument document)
         {
-            var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, document.Id);
+            FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, document.Id);
             _collection.FindOneAndReplace(filter, document);
         }
 
         public virtual async Task ReplaceOneAsync(TDocument document)
         {
-            var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, document.Id);
+            FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, document.Id);
             await _collection.FindOneAndReplaceAsync(filter, document);
         }
 
@@ -118,8 +115,9 @@ namespace SirenaDataHarvesting.Services.GenericRepository
 
         public void DeleteById(string id)
         {
-            var objectId = new ObjectId(id);
-            var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+            ObjectId objectId = new(id);
+            FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+
             _collection.FindOneAndDelete(filter);
         }
 
@@ -127,8 +125,9 @@ namespace SirenaDataHarvesting.Services.GenericRepository
         {
             return Task.Run(() =>
             {
-                var objectId = new ObjectId(id);
-                var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+                ObjectId objectId = new(id);
+                FilterDefinition<TDocument> filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+
                 _collection.FindOneAndDeleteAsync(filter);
             });
         }

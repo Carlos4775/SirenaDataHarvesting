@@ -5,7 +5,7 @@ using SirenaDataHarvesting.Services.ScraperService;
 
 namespace SirenaDataHarvesting
 {
-    public class Worker : BackgroundService
+    public class Worker: BackgroundService
     {
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;

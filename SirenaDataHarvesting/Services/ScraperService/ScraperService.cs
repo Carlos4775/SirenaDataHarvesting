@@ -18,6 +18,8 @@ namespace SirenaDataHarvesting.Services.ScraperService
             // Navigate to the website
             await Task.Run(() => driver.Navigate().GoToUrl(targetUrl));
 
+            Task.Delay(1000).Wait();
+
             // Find elements that contain the product details
             IReadOnlyCollection<IWebElement> productElements = await Task.Run(() => driver.FindElements(By.CssSelector(".item-product")));
 
