@@ -53,10 +53,9 @@ namespace SirenaDataHarvesting
 
                 List<Category> categories = _categoryService.GetAll();
 
-                // alimentacion?page=1&limit=15&sort=1
                 foreach (Category category in categories)
                 {
-                    string categoryName = "category/" + CategoryNameUtility.RemoveDiacritics(category.Name).ToLower().Replace(' ', '-');
+                    string categoryName = "category/" + category.Slug;
                     string pageParameters = "?page=1&limit=0&sort=1";
                     string targetUrl = $"{baseUrl}{categoryName}{pageParameters}";
 

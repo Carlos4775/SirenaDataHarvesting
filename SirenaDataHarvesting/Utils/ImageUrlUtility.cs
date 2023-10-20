@@ -6,7 +6,9 @@ namespace SirenaDataHarvesting.Utils
     {
         public static string? ExtractImageUrlFromStyleAttribute(string styleAttribute)
         {
-            Match match = Regex.Match(styleAttribute, @"url\(""([^""]+)""\)");
+            string pattern = @"url\(""([^""]+)""\)";
+
+            Match match = Regex.Match(styleAttribute, pattern);
 
             return match.Success ? match.Groups[1].Value : null;
         }

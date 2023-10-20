@@ -7,6 +7,7 @@ namespace SirenaDataHarvesting.Models
     public class Category : Document
     {
         public required string Name { get; set; }
+        public required string Slug  { get; set; }
         public List<Category>? Subcategories { get; set; }
     }
 }

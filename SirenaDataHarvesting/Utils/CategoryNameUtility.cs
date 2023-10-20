@@ -23,5 +23,10 @@ namespace SirenaDataHarvesting.Utils
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
+
+        public static string SlugifyName(string name)
+        {
+            return RemoveDiacritics(name).ToLower().Replace(' ', '-');
+        }
     }
 }
